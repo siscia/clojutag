@@ -1,0 +1,10 @@
+(ns clojutag.core
+  (:gen-class)
+  (:import [org.jaudiotagger.audio AudioFileIO]))
+
+(defn -main [& args]
+  (let [fl (new java.io.FileInputStream "a"),
+	hio (AudioFileIO.)]
+    (.read hio fl)
+    
+  (println "this is launched with this arg:" args)))
