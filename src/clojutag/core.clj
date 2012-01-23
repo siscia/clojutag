@@ -12,12 +12,14 @@
 (def echo (new EchoNestAPI api-key))
 
 (def percorso "/home/simo/Music/a.mp3")
-(def dire "/home/simo/music-to-try")
+;(def dire "/home/simo/music-to-try")
 
 (defn dizio [a]
+  (do (pr "a"))
   {(. FieldKey ARTIST) (.getArtistName a)
    (. FieldKey ALBUM) (.getReleaseName a)
-   (. FieldKey TITLE) (.getTitle a)})
+   (. FieldKey TITLE) (.getTitle a)
+   (. FieldKey COMMENT) "By simone"})
 
 
 (defn write-tag [f info-to-write]
@@ -26,18 +28,21 @@
         tag (.getTag audiofile)
         newtag (.createDefaultTag audiofile)]
     (do
-      (doall
+      (dorun
        (map (fn [[fieldkey info]] (.setField newtag fieldkey info)) info-to-write))
       (.deleteTag audiofileIO audiofile)
       (.setTag audiofile newtag)
       (.commit audiofile)
+      (.renameTo f (new java.io.File (str (java.io.File/separator) (.getFirst newtag (. FieldKey TITLE)))))
       (pr info-to-write))))
 
 (defn write-tag-song [f]
   (let [echo (new EchoNestAPI api-key)
         track (.uploadTrack echo f true)
         d (dizio track)]
-    (write-tag f d)))
+    (doall
+      (pr "ok")
+    (write-tag f d))))
 
 (defn get-info [path-to-file]
   (let [api-key "SP3VJBGXDTYFD6IBT"
@@ -50,8 +55,16 @@
   (let [dir (clojure.java.io/file dir)]
     (file-seq dir)))
 
-(defn -main [& args]
-  (let [s (walk-directory dire)]
-    (doall
-     (pmap write-tag-song (drop 1 s)))))
+(defn -main  [& args]
+  (let [s (walk-directory (nth args 0))]
+    (doseq [files-to-analize s]
+      (write-tag-song files-to-analize))))
 
+(defn -main1 [& args]
+  (let [f (new java.io.File (nth args 0))]
+    (do
+     (time
+    (write-tag-song f)))))
+
+(defn -main2 [& args]
+  (pr (nth args 0)))
