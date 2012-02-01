@@ -28,7 +28,7 @@
         tag (.getTag audiofile)
         newtag (.createDefaultTag audiofile)]
     (do
-      (dorun
+      (doseq [diz info-to-write]
        (map (fn [[fieldkey info]] (.setField newtag fieldkey info)) info-to-write))
       (.deleteTag audiofileIO audiofile)
       (.setTag audiofile newtag)
@@ -52,15 +52,20 @@
     (dizio track)))
 
 (defn walk-directory [dir]
+  (do (println dir))
   (let [dir (clojure.java.io/file dir)]
+    (pr (doall (file-seq dir)))
     (file-seq dir)))
 
 (defn -main  [& args]
-  (let [s (walk-directory (nth args 0))]
+ ; (do (pr args))
+  (let [s (filter #(.isFile %) (walk-directory "C:\\try"))]
+    (pr "ciao")
     (doseq [files-to-analize s]
       (write-tag-song files-to-analize))))
 
 (defn -main1 [& args]
+  (do (pr args))
   (let [f (new java.io.File (nth args 0))]
     (do
      (time
