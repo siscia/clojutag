@@ -15,7 +15,6 @@
 ;(def dire "/home/simo/music-to-try")
 
 (defn dizio [a]
-  (do (pr "a"))
   {(. FieldKey ARTIST) (.getArtistName a)
    (. FieldKey ALBUM) (.getReleaseName a)
    (. FieldKey TITLE) (.getTitle a)
@@ -28,20 +27,17 @@
         tag (.getTag audiofile)
         newtag (.createDefaultTag audiofile)]
     (do
-      (doseq [diz info-to-write]
-       (map (fn [[fieldkey info]] (.setField newtag fieldkey info)) info-to-write))
+      (dorun
+	(map (fn [[fieldkey info]] (.setField newtag fieldkey info)) info-to-write))
       (.deleteTag audiofileIO audiofile)
-      (.setTag audiofile newtag)
-      (.commit audiofile)
-      (.renameTo f (new java.io.File (str (java.io.File/separator) (.getFirst newtag (. FieldKey TITLE)))))
-      (pr info-to-write))))
+      (.commit (doto audiofile (.setTag newtag)))
+      nil)))
 
 (defn write-tag-song [f]
   (let [echo (new EchoNestAPI api-key)
         track (.uploadTrack echo f true)
         d (dizio track)]
     (doall
-      (pr "ok")
     (write-tag f d))))
 
 (defn get-info [path-to-file]
@@ -52,17 +48,24 @@
     (dizio track)))
 
 (defn walk-directory [dir]
-  (do (println dir))
   (let [dir (clojure.java.io/file dir)]
-    (pr (doall (file-seq dir)))
     (file-seq dir)))
 
-(defn -main  [& args]
- ; (do (pr args))
+(defn -main1  [& args]
+  (do
+    (time
   (let [s (filter #(.isFile %) (walk-directory "C:\\try"))]
-    (pr "ciao")
     (doseq [files-to-analize s]
       (write-tag-song files-to-analize))))
+    ))
+
+(defn -main  [& args]
+  (do
+    (time
+  (let [s (filter #(.isFile %) (walk-directory "C:\\try"))]
+    (dorun
+      (pmap write-tag-song s))))
+    ))
 
 (defn -main1 [& args]
   (do (pr args))
