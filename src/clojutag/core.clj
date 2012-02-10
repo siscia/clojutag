@@ -3,7 +3,8 @@
   (:import [org.jaudiotagger.audio AudioFileIO]
 	   [org.jaudiotagger.tag Tag FieldKey]
 	   [org.jaudiotagger.audio.real RealTag]
-	   [com.echonest.api.v4 Song EchoNestAPI])
+	   [com.echonest.api.v4 Song EchoNestAPI]
+	   [com.echonest.api.v4 EchoNestException])
   (:require [clojure.string :as str])
   (:use clojure.java.io))
 
@@ -12,13 +13,24 @@
 (def echo (new EchoNestAPI api-key))
 
 (def percorso "/home/simo/Music/a.mp3")
-;(def dire "/home/simo/music-to-try")
+					;(def dire "/home/simo/music-to-try")
+
+(defmacro without-java-output [& body]
+  `(with-open [w# (java.io.PrintStream. "NUL")]
+     (let [oo# System/out, oe# System/err]
+       (System/setOut w#)
+       (System/setErr w#)
+       (try
+         ~@body
+         (finally
+          (System/setOut oo#)
+          (System/setErr oe#))))))
 
 (defn dizio [a]
   {(. FieldKey ARTIST) (.getArtistName a)
    (. FieldKey ALBUM) (.getReleaseName a)
    (. FieldKey TITLE) (.getTitle a)
-   (. FieldKey COMMENT) "By simone"})
+   (. FieldKey COMMENT) "Wooooooooorks!"})
 
 
 (defn write-tag [f info-to-write]
@@ -33,20 +45,27 @@
       (.commit (doto audiofile (.setTag newtag)))
       nil)))
 
-(defn write-tag-song [f]
-  (let [echo (new EchoNestAPI api-key)
+(defn write-tag-song2 [f]
+  (try
+    (let [echo (new EchoNestAPI api-key)
         track (.uploadTrack echo f true)
         d (dizio track)]
     (doall
-    (write-tag f d))))
+     (write-tag f d)))
+  (catch Exception e
+    (println "Problems with f:\n\n\n\n\n" e))))
 
-(defn get-info [path-to-file]
-  (let [api-key "SP3VJBGXDTYFD6IBT"
-	echo (new EchoNestAPI api-key)
-	f (new java.io.File path-to-file)
-	track (.uploadTrack echo f true)]
-    (dizio track)))
+(defn write-tag-song [f]
+  (let [echo (new EchoNestAPI api-key)
+        track (.uploadTrack echo f true)]
+    (println f track)
+    (if (nil? track)
+      (doall
+       (println f)
+       (write-tag f (dizio track)))
+    (do (println f)))))
 
+    
 (defn walk-directory [dir]
   (let [dir (clojure.java.io/file dir)]
     (file-seq dir)))
@@ -54,18 +73,20 @@
 (defn -main1  [& args]
   (do
     (time
-  (let [s (filter #(.isFile %) (walk-directory "C:\\try"))]
+     (let [s (filter #(.isFile %) (walk-directory "C:\\try"))]
+       (println s)
     (doseq [files-to-analize s]
       (write-tag-song files-to-analize))))
     ))
 
 (defn -main  [& args]
-  (do
+  (without-java-output
+   (do
     (time
   (let [s (filter #(.isFile %) (walk-directory "C:\\try"))]
     (dorun
-      (pmap write-tag-song s))))
-    ))
+      (map write-tag-song s))))
+    )))
 
 (defn -main1 [& args]
   (do (pr args))
