@@ -27,10 +27,11 @@
           (System/setErr oe#))))))
 
 (defn dizio [a]
-  {(. FieldKey ARTIST) (.getArtistName a)
-   (. FieldKey ALBUM) (.getReleaseName a)
-   (. FieldKey TITLE) (.getTitle a)
-   (. FieldKey COMMENT) "Wooooooooorks!"})
+  {:pre [(not (nil? a))]}
+  {(. FieldKey ARTIST) (if-let [artist (.getArtistName a)] artist "Artist not found")
+   (. FieldKey ALBUM) (if-let [release (.getReleaseName a)] release "Album not found")
+   (. FieldKey TITLE) (if-let [title (.getTitle a)] title "Title not found")
+   (. FieldKey COMMENT) "By Clojutag"})
 
 
 (defn write-tag [f info-to-write]
@@ -40,30 +41,18 @@
         newtag (.createDefaultTag audiofile)]
     (do
       (dorun
-	(map (fn [[fieldkey info]] (.setField newtag fieldkey info)) info-to-write))
+	(map (fn [[fieldkey info]] (.addField newtag fieldkey info)) info-to-write))
       (.deleteTag audiofileIO audiofile)
-      (.commit (doto audiofile (.setTag newtag)))
-      nil)))
-
-(defn write-tag-song2 [f]
-  (try
-    (let [echo (new EchoNestAPI api-key)
-        track (.uploadTrack echo f true)
-        d (dizio track)]
-    (doall
-     (write-tag f d)))
-  (catch Exception e
-    (println "Problems with f:\n\n\n\n\n" e))))
+      (.commit (doto audiofile (.setTag newtag))))))
 
 (defn write-tag-song [f]
   (let [echo (new EchoNestAPI api-key)
         track (.uploadTrack echo f true)]
-    (println f track)
-    (if (nil? track)
+    (if (not (nil? track))
       (doall
-       (println f)
+       (println track)
        (write-tag f (dizio track)))
-    (do (println f)))))
+    (do (println "in if" )))))
 
     
 (defn walk-directory [dir]
