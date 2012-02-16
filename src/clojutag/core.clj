@@ -10,11 +10,6 @@
 
 (def api-key "SP3VJBGXDTYFD6IBT")
 
-(def echo (new EchoNestAPI api-key))
-
-(def percorso "/home/simo/Music/a.mp3")
-					;(def dire "/home/simo/music-to-try")
-
 (defmacro without-java-output [& body]
   `(with-open [w# (java.io.PrintStream. "NUL")]
      (let [oo# System/out, oe# System/err]
@@ -31,7 +26,7 @@
   {(. FieldKey ARTIST) (if-let [artist (.getArtistName a)] artist "Artist not found")
    (. FieldKey ALBUM) (if-let [release (.getReleaseName a)] release "Album not found")
    (. FieldKey TITLE) (if-let [title (.getTitle a)] title "Title not found")
-   (. FieldKey COMMENT) "By Clojutag"})
+   (. FieldKey COMMENT) "Is so fast"})
 
 
 (defn write-tag [f info-to-write]
@@ -50,7 +45,7 @@
         track (.uploadTrack echo f true)]
     (if (not (nil? track))
       (doall
-       (println track)
+       (println f)
        (write-tag f (dizio track)))
     (do (println "in if" )))))
 
@@ -72,17 +67,7 @@
   (without-java-output
    (do
     (time
-  (let [s (filter #(.isFile %) (walk-directory "C:\\try"))]
+     (let [s (filter #(.isFile %) (reduce concat (map walk-directory args)))]
     (dorun
-      (map write-tag-song s))))
+      (pmap write-tag-song s))))
     )))
-
-(defn -main1 [& args]
-  (do (pr args))
-  (let [f (new java.io.File (nth args 0))]
-    (do
-     (time
-    (write-tag-song f)))))
-
-(defn -main2 [& args]
-  (pr (nth args 0)))
