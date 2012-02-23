@@ -1,4 +1,4 @@
-(ns clojutag.core
+(ns clojutag.core-old
   (:gen-class)
   (:import [org.jaudiotagger.audio AudioFileIO]
 	   [org.jaudiotagger.tag Tag FieldKey]
@@ -7,9 +7,7 @@
 	   [com.echonest.api.v4 EchoNestException]
 	   [java.io File])
   (:require [clojure.string :as str])
-  (:use [clojutag.utilities]
-	[clojure.tools.cli :only (cli)]))
-
+  (:use clojure.java.io))
 
 (def api-key "SP3VJBGXDTYFD6IBT")
 
@@ -18,6 +16,20 @@
       :album (. FieldKey ALBUM)
       :title (. FieldKey TITLE)
       :comment (. FieldKey COMMENT)})
+
+(defn rename-file [file new-name]
+  (.renameTo file (File. (str (.getParent file) (File/separator) new-name (re-find #"\.[^.]*" (.getPath file))))))
+
+(defmacro without-java-output [& body]
+  `(with-open [w# (java.io.PrintStream. "NUL")]
+     (let [oo# System/out, oe# System/err]
+       (System/setOut w#)
+       (System/setErr w#)
+       (try
+         ~@body
+         (finally
+          (System/setOut oo#)
+          (System/setErr oe#))))))
 
 (defn dizio [a]
   {:pre [(not (nil? a))]}
@@ -53,25 +65,16 @@
        (write-tag f info-to-write (keyword par)))
     (do (println "in if" )))))
 
+    
+(defn walk-directory [dir]
+  (let [dir (clojure.java.io/file dir)]
+    (file-seq dir)))
 
-(defn -main1  [& args]
-  (cli args
-       "prova"
-       ["-h" "--help" "Aiutooooooo" :default true]
+
+(defn -main  [& args]
   (without-java-output
    (do
     (time
      (let [s (filter #(.isFile %) (reduce concat (map walk-directory args)))]
     (dorun
-      (pmap write-tag-song s (repeat (last args))))))))))
-
-(defn -main  [& args]
-  (let [[options args banner]
-	(cli args
-	     ["-h" "--help" "Aiutooooooo" :default false :flag true]
-	     ["-f" "--faux" "the Faux du fafa"])]
-    (when (:help options)
-      (println banner)
-      (System/exit 0))
-    (println (class (nth args 0)))
-    (println args)))
+      (pmap write-tag-song s (repeat (last args)))))))))
